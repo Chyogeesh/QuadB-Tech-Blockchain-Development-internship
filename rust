@@ -1,0 +1,71 @@
+use ic_cdk::export::{Principal};
+use ic_cdk::api::call;
+use ic_cdk_macros::{update, query};
+use serde::{Serialize, Deserialize};
+use std::collections::HashMap;
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct TokenWallet {
+    pub balance: u64,
+    pub owner: Principal,
+}
+
+#[derive(Default)]
+pub struct TokenState {
+    wallets: HashMap<Principal, TokenWallet>,
+}
+
+impl TokenState {
+    fn get_wallet(&mut self, owner: Principal) -> TokenWallet {
+        if let Some(wallet) = self.wallets.get(&owner) {
+            wallet.clone()
+        } else {
+            let new_wallet = TokenWallet {
+                balance: 0,
+                owner,
+            };
+            self.wallets.insert(owner.clone(), new_wallet.clone());
+            new_wallet
+        }
+    }
+
+    fn transfer_tokens(&mut self, sender: Principal, recipient: Principal, amount: u64) -> Result<(), String> {
+        let sender_wallet = self.get_wallet(sender.clone());
+        if sender_wallet.balance < amount {
+            return Err("Insufficient balance".to_string());
+        }
+
+        let recipient_wallet = self.get_wallet(recipient.clone());
+
+        self.wallets.get_mut(&sender).unwrap().balance -= amount;
+        self.wallets.get_mut(&recipient).unwrap().balance += amount;
+
+        Ok(())
+    }
+
+    fn get_balance(&self, owner: Principal) -> u64 {
+        if let Some(wallet) = self.wallets.get(&owner) {
+            wallet.balance
+        } else {
+            0
+        }
+    }
+}
+
+static mut TOKEN_STATE: TokenState = TokenState {
+    wallets: HashMap::new(),
+};
+
+#[update]
+fn transfer_tokens(recipient: Principal, amount: u64) -> Result<(), String> {
+    let sender = ic_cdk::caller();
+    let mut state = unsafe { &mut TOKEN_STATE };
+    state.transfer_tokens(sender, recipient, amount)
+}
+
+#[query]
+fn get_balance() -> u64 {
+    let owner = ic_cdk::caller();
+    let state = unsafe { &TOKEN_STATE };
+    state.get_balance(owner)
+}
