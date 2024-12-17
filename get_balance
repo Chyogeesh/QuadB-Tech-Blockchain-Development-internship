@@ -1,0 +1,35 @@
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ic_cdk::api::caller;
+
+    #[test]
+    fn test_transfer_tokens() {
+        let sender = Principal::from_text("sender_principal").unwrap();
+        let recipient = Principal::from_text("recipient_principal").unwrap();
+
+        let mut state = TokenState::default();
+        state.wallets.insert(sender.clone(), TokenWallet { balance: 100, owner: sender.clone() });
+        state.wallets.insert(recipient.clone(), TokenWallet { balance: 50, owner: recipient.clone() });
+
+        let result = state.transfer_tokens(sender.clone(), recipient.clone(), 30);
+        assert!(result.is_ok());
+        assert_eq!(state.get_balance(sender), 70);
+        assert_eq!(state.get_balance(recipient), 80);
+    }
+
+    #[test]
+    fn test_insufficient_balance() {
+        let sender = Principal::from_text("sender_principal").unwrap();
+        let recipient = Principal::from_text("recipient_principal").unwrap();
+
+        let mut state = TokenState::default();
+        state.wallets.insert(sender.clone(), TokenWallet { balance: 10, owner: sender.clone() });
+        state.wallets.insert(recipient.clone(), TokenWallet { balance: 50, owner: recipient.clone() });
+
+        let result = state.transfer_tokens(sender.clone(), recipient.clone(), 30);
+        assert!(result.is_err());
+        assert_eq!(state.get_balance(sender), 10);
+        assert_eq!(state.get_balance(recipient), 50);
+    }
+}
