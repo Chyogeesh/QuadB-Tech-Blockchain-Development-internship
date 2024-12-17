@@ -1,0 +1,7 @@
+
+---
+
+### Conclusion
+
+The **Secure Token Wallet** on the ICP blockchain is implemented using **Rust** to develop smart contracts that handle token sending, receiving, and balance tracking. We deploy it to a local testnet and test it using unit tests. The solution follows basic **blockchain security practices** and is fully documented for ease of setup and usage.
+
