@@ -1,0 +1,2 @@
+dfx start --clean
+dfx deploy
